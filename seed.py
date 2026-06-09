@@ -49,6 +49,7 @@ def clear_existing_data(cursor, conn):
     cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
 
     cursor.execute("DELETE FROM attendance")
+    cursor.execute("DELETE FROM feedback")
     cursor.execute("DELETE FROM registrations")
     cursor.execute("DELETE FROM events")
     cursor.execute("DELETE FROM venues")
@@ -56,6 +57,7 @@ def clear_existing_data(cursor, conn):
     cursor.execute("DELETE FROM admins")
 
     cursor.execute("ALTER TABLE attendance AUTO_INCREMENT = 1")
+    cursor.execute("ALTER TABLE feedback AUTO_INCREMENT = 1")
     cursor.execute("ALTER TABLE registrations AUTO_INCREMENT = 1")
     cursor.execute("ALTER TABLE events AUTO_INCREMENT = 1")
     cursor.execute("ALTER TABLE venues AUTO_INCREMENT = 1")
@@ -152,7 +154,7 @@ def seed_events(cursor):
             "description": "A university music event featuring student performances, bands, and entertainment activities.",
             "category": "Music",
             "venue": "University Main Hall",
-            "date": date(2026, 7, 10),
+            "date": date(2026, 5, 15),
             "time": time(18, 0),
             "location": "University Main Hall",
             "capacity": 300,
@@ -306,6 +308,23 @@ def seed_registrations(cursor):
     print("3 sample registrations seeded.")
 
 
+def seed_feedback(cursor):
+    """Seed sample feedback for past events."""
+    # Feedback for Music Night (event 1, now past-dated)
+    feedbacks = [
+        (1, None, 5, "Amazing music night! The performances were incredible and the crowd energy was electric."),
+        (1, None, 4, "Great atmosphere and well-organized event. Would love more food stalls next time."),
+        (1, None, 5, "Best university event this year! The sound system was perfect."),
+        (1, None, 3, "Good event but started a bit late. The performances made up for it though."),
+    ]
+    for event_id, reg_id, rating, comment in feedbacks:
+        cursor.execute("""
+            INSERT INTO feedback (event_id, registration_id, rating, comment)
+            VALUES (%s, %s, %s, %s)
+        """, (event_id, reg_id, rating, comment))
+    print(f"{len(feedbacks)} sample feedback entries seeded.")
+
+
 def main():
     try:
         conn = get_connection()
@@ -318,6 +337,7 @@ def main():
         seed_venues(cursor)
         seed_events(cursor)
         seed_registrations(cursor)
+        seed_feedback(cursor)
 
         conn.commit()
         cursor.close()

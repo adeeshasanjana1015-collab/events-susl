@@ -7,11 +7,19 @@ import qrcode
 # -----------------------------
 # Database configuration (reads from environment)
 # -----------------------------
-DB_HOST = os.environ.get('MYSQLHOST') or os.environ.get('MYSQL_HOST', 'localhost')
-DB_PORT = int(os.environ.get('MYSQLPORT', 3306))
-DB_USER = os.environ.get('MYSQLUSER') or os.environ.get('MYSQL_USER', 'root')
-DB_PASSWORD = os.environ.get('MYSQLPASSWORD') or os.environ.get('MYSQL_PASSWORD', '')
-DB_NAME = os.environ.get('MYSQLDATABASE') or os.environ.get('MYSQL_DB', 'events_susl')
+def _env(*keys):
+    """Return the first environment variable that is set (non-empty), or None."""
+    for k in keys:
+        val = os.environ.get(k)
+        if val:
+            return val
+    return None
+
+DB_HOST = _env('MYSQLHOST', 'DB_HOST', 'MYSQL_HOST') or 'localhost'
+DB_PORT = int(_env('MYSQLPORT', 'DB_PORT') or 3306)
+DB_USER = _env('MYSQLUSER', 'DB_USER', 'MYSQL_USER') or 'root'
+DB_PASSWORD = _env('MYSQLPASSWORD', 'DB_PASSWORD', 'MYSQL_PASSWORD') or ''
+DB_NAME = _env('MYSQLDATABASE', 'DB_NAME', 'MYSQL_DB') or 'events_susl'
 
 
 def get_connection():

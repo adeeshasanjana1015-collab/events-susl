@@ -45,9 +45,9 @@
         </div>
 
         <!-- ═══════════ EVENT PERFORMANCE SUMMARY ═══════════ -->
-        <div class="mb-5">
-            <h4 class="fw-bold mb-3"><i class="bi bi-graph-up me-2"></i>Event Performance Summary</h4>
-            <div class="row g-3 mb-4">
+        <div class="mb-4">
+            <h5 class="fw-bold mb-2"><i class="bi bi-graph-up me-2"></i>Event Performance Summary</h5>
+            <div class="row g-2 mb-3">
                 <div class="col-6 col-md-3">
                     <div class="chart-card text-center p-3">
                         <h3 class="fw-bold text-primary mb-0">{{ registered }}</h3>
@@ -75,9 +75,9 @@
             </div>
 
             {% if event.capacity %}
-            <div class="row g-3 mb-4">
+            <div class="row g-2 mb-3">
                 <div class="col-12 col-md-4">
-                    <div class="chart-card text-center p-3">
+                    <div class="chart-card text-center p-2">
                         <h3 class="fw-bold text-secondary mb-0">{{ capacity_usage }}%</h3>
                         <small class="text-muted">Capacity Usage ({{ registered }}/{{ event.capacity }})</small>
                     </div>
@@ -85,17 +85,21 @@
             </div>
             {% endif %}
 
-            <div class="row g-4">
+            <div class="row g-3">
                 <div class="col-lg-7">
-                    <div class="chart-card p-4">
-                        <h6 class="fw-bold mb-3">Registration vs Attendance</h6>
-                        <canvas id="regAttChart" height="280"></canvas>
+                    <div class="chart-card p-3">
+                        <h6 class="fw-bold mb-2">Registration vs Attendance</h6>
+                        <div style="height:240px; position:relative;">
+                            <canvas id="regAttChart"></canvas>
+                        </div>
                     </div>
                 </div>
                 <div class="col-lg-5">
-                    <div class="chart-card p-4">
-                        <h6 class="fw-bold mb-3">Attendance Breakdown</h6>
-                        <canvas id="attendanceDoughnut" height="280"></canvas>
+                    <div class="chart-card p-3">
+                        <h6 class="fw-bold mb-2">Attendance Breakdown</h6>
+                        <div style="height:240px; position:relative;">
+                            <canvas id="attendanceDoughnut"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>

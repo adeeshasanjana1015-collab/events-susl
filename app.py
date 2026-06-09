@@ -1053,6 +1053,14 @@ def past_event_details(event_id):
         flash('Event not found.', 'danger')
         return redirect(url_for('past_events'))
 
+    # ── Attendance analytics ──
+    registered = event['booked_count'] or 0
+    attended = event['attended_count'] or 0
+    absent = max(0, registered - attended)
+    attendance_rate = round((attended / registered * 100), 1) if registered > 0 else 0.0
+    capacity = event.get('capacity') or 0
+    capacity_usage = round((registered / capacity * 100), 1) if capacity > 0 else 0.0
+
     # Feedback stats
     cur.execute("""
     SELECT ROUND(AVG(rating),1) AS avg_rating, COUNT(*) AS cnt
@@ -1089,7 +1097,10 @@ def past_event_details(event_id):
     cur.close()
     return render_template('past_event_details.html', event=event,
                            fb_stats=fb_stats, dist=dist, total_fb=total_fb,
-                           feedbacks=feedbacks, media=media)
+                           feedbacks=feedbacks, media=media,
+                           registered=registered, attended=attended,
+                           absent=absent, attendance_rate=attendance_rate,
+                           capacity_usage=capacity_usage)
 
 
 # ==================== ADMIN FEEDBACK ====================

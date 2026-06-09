@@ -100,15 +100,11 @@
         .then(data => {
             if (data.success) {
                 showResult(true, data.message,
-                    '#' + data.registration_number + ' — ' + data.name + ' — ' + data.event);
+                    data.name + ' — ' + data.event);
                 statusEl.textContent = '✓ Checked in! Ready for next scan.';
                 statusEl.className = 'text-success fw-semibold';
             } else {
-                if (data.duplicate) {
-                    showResult(false, data.message);
-                } else {
-                    showResult(false, data.message);
-                }
+                showResult(false, data.message);
                 statusEl.textContent = 'Scan not accepted. Try again.';
                 statusEl.className = 'text-danger';
             }

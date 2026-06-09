@@ -4,7 +4,7 @@
 import os
 import bcrypt
 import qrcode
-from datetime import datetime, date, time as dt_time
+from datetime import datetime, date, time as dt_time, timedelta
 from flask import (Flask, render_template, request, redirect, url_for,
                    session, flash, send_from_directory)
 from flask_mysqldb import MySQL
@@ -854,6 +854,39 @@ def admin_attendance():
     cur.close()
     return render_template('admin_attendance.html', records=records)
 
+# ==================== ATTENDANCE SCANNING ====================
+
+def _check_attendance_window(event_id, cur):
+    """Check if attendance is open (3 hours before event start).
+    Returns (is_open, message).
+    The message is ready for display to admin when is_open=False."""
+    cur.execute("SELECT event_date, event_time, title FROM events WHERE id=%s", (event_id,))
+    event = cur.fetchone()
+    if not event:
+        return False, 'Event not found.'
+
+    # Safely combine event_date + event_time (event_time may be timedelta, time, or str)
+    ev_time = event['event_time']
+    if isinstance(ev_time, timedelta):
+        total_seconds = int(ev_time.total_seconds())
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        ev_t = dt_time(hours, minutes)
+    else:
+        ev_t = ev_time
+
+    event_dt = datetime.combine(event['event_date'], ev_t)
+    attendance_open_dt = event_dt - timedelta(hours=3)
+    now = datetime.now()
+
+    if now < attendance_open_dt:
+        # Format: "11:00 AM" (no leading zero on hour)
+        open_str = attendance_open_dt.strftime('%I:%M %p').lstrip('0')
+        return False, f'Attendance marking has not started yet. You can mark attendance from {open_str}.'
+
+    return True, ''
+
+
 @app.route('/admin/scan-attendance', methods=['GET', 'POST'])
 @login_required
 def scan_attendance():
@@ -899,12 +932,19 @@ def scan_attendance():
             return render_template('scan_attendance.html')
 
         if reg['status'] != 'Active':
-            flash('This registration is not active.', 'danger')
+            flash('This registration is not active (cancelled/removed).', 'danger')
             cur.close()
             return render_template('scan_attendance.html')
 
         if reg['attendance_status'] == 1:
-            flash(f'{reg["full_name"]} has already been checked in.', 'warning')
+            flash('Attendance already marked for this participant.', 'warning')
+            cur.close()
+            return render_template('scan_attendance.html')
+
+        # ── Time gate: attendance opens 3 hours before event ──
+        open_ok, open_msg = _check_attendance_window(reg['event_id'], cur)
+        if not open_ok:
+            flash(open_msg, 'warning')
             cur.close()
             return render_template('scan_attendance.html')
 
@@ -918,7 +958,7 @@ def scan_attendance():
         event_title = cur.fetchone()['title']
         cur.close()
 
-        flash(f'Check-in successful! #{reg["registration_number"]} {reg["full_name"]} — {event_title}', 'success')
+        flash(f'{reg["full_name"]} attendance successful! Seat No: {reg["registration_number"]} — {event_title}', 'success')
         return render_template('scan_attendance.html')
 
     return render_template('scan_attendance.html')
@@ -1248,14 +1288,18 @@ def api_scan():
         return jsonify({'success': False, 'message': 'This registration is not active (cancelled/removed).'}), 400
 
     if reg['attendance_status'] == 1:
-        cur.execute("SELECT title FROM events WHERE id=%s", (reg['event_id'],))
-        event_title = cur.fetchone()['title']
         cur.close()
         return jsonify({
             'success': False,
-            'message': f'{reg["full_name"]} has already been checked in for {event_title}.',
+            'message': 'Attendance already marked for this participant.',
             'duplicate': True
         }), 409
+
+    # ── Time gate: attendance opens 3 hours before event ──
+    open_ok, open_msg = _check_attendance_window(reg['event_id'], cur)
+    if not open_ok:
+        cur.close()
+        return jsonify({'success': False, 'message': open_msg}), 400
 
     # Mark attendance
     cur.execute("UPDATE registrations SET attendance_status=1, check_in_time=NOW() WHERE id=%s",
@@ -1270,9 +1314,9 @@ def api_scan():
 
     return jsonify({
         'success': True,
-        'message': 'Check-in successful!',
-        'registration_number': reg['registration_number'],
+        'message': f'Attendance Successful! Seat No: {reg["registration_number"]}',
         'name': reg['full_name'],
+        'seat': reg['registration_number'],
         'event': event_title
     })
 

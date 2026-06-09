@@ -1,22 +1,185 @@
 {% extends "admin_base.html" %}
 {% block title %}Scan QR Attendance — Admin{% endblock %}
+{% block head %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% endblock %}
 {% block content %}
 <div class="p-4">
     <div class="row justify-content-center">
-        <div class="col-lg-5">
-            <div class="form-card p-4 text-center">
-                <div class="mb-3"><i class="bi bi-qr-code-scan display-3 text-primary"></i></div>
-                <h4 class="fw-bold">Scan Attendance</h4>
-                <p class="text-muted small">Enter the QR code or registration ID to check in a participant.</p>
+        <div class="col-lg-6">
+            <div class="form-card p-4">
+                <!-- Camera Scanner -->
+                <div class="text-center mb-4">
+                    <i class="bi bi-camera-video display-3 text-primary"></i>
+                    <h4 class="fw-bold mt-2">Scan QR Attendance</h4>
+                    <p class="text-muted small mb-3">Use your camera to scan a participant's QR code, or enter it manually.</p>
+                </div>
+
+                <div id="cameraSection" class="mb-4">
+                    <div id="qr-reader" style="width:100%; border-radius:12px; overflow:hidden;"></div>
+                    <div class="d-flex gap-2 mt-3 justify-content-center">
+                        <button id="startScanBtn" class="btn btn-primary" onclick="startScanner()">
+                            <i class="bi bi-camera-video me-1"></i>Start Camera Scan
+                        </button>
+                        <button id="stopScanBtn" class="btn btn-outline-danger d-none" onclick="stopScanner()">
+                            <i class="bi bi-stop-circle me-1"></i>Stop Camera
+                        </button>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small id="scanStatus" class="text-muted">Camera is off. Click "Start Camera Scan" to begin.</small>
+                    </div>
+                </div>
+
+                <!-- Scan result alert -->
+                <div id="scanResult" class="d-none"></div>
+
+                <hr class="my-4">
+
+                <!-- Manual Input -->
+                <div class="text-center">
+                    <p class="fw-semibold text-muted mb-2">— or enter manually —</p>
+                </div>
                 <form method="POST">
                     <div class="mb-3">
                         <input type="text" name="qr_value" class="form-control form-control-lg text-center"
                                placeholder="QR Code or Registration ID" required autofocus>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-check-lg me-1"></i>Mark Attendance</button>
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-check-lg me-1"></i>Mark Attendance
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let html5QrCode = null;
+    const scanApiUrl = "{{ url_for('api_scan') }}";
+    let isScanning = false;
+    let lastScannedValue = '';
+    let scanCooldown = false;
+
+    const resultDiv = document.getElementById('scanResult');
+    const statusEl = document.getElementById('scanStatus');
+    const startBtn = document.getElementById('startScanBtn');
+    const stopBtn = document.getElementById('stopScanBtn');
+    const readerDiv = document.getElementById('qr-reader');
+
+    function showResult(success, message, details) {
+        resultDiv.className = 'alert alert-' + (success ? 'success' : 'danger') + ' d-block mt-3';
+        resultDiv.innerHTML = '<strong>' + (success ? '✓ ' : '✗ ') + '</strong>' + message;
+        if (details) {
+            resultDiv.innerHTML += '<br><small class="opacity-75">' + details + '</small>';
+        }
+        // Auto-hide after 8 seconds
+        setTimeout(() => { resultDiv.className = 'd-none'; }, 8000);
+    }
+
+    function onScanSuccess(decodedText) {
+        // Prevent duplicate rapid scans
+        if (decodedText === lastScannedValue && scanCooldown) return;
+        lastScannedValue = decodedText;
+        scanCooldown = true;
+
+        // Pause scanning briefly
+        if (html5QrCode) html5QrCode.pause(true);
+
+        statusEl.textContent = 'QR detected! Verifying...';
+        statusEl.className = 'text-primary fw-semibold';
+
+        // Send to backend
+        fetch(scanApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ qr_value: decodedText })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showResult(true, data.message,
+                    '#' + data.registration_number + ' — ' + data.name + ' — ' + data.event);
+                statusEl.textContent = '✓ Checked in! Ready for next scan.';
+                statusEl.className = 'text-success fw-semibold';
+            } else {
+                if (data.duplicate) {
+                    showResult(false, data.message);
+                } else {
+                    showResult(false, data.message);
+                }
+                statusEl.textContent = 'Scan not accepted. Try again.';
+                statusEl.className = 'text-danger';
+            }
+        })
+        .catch(err => {
+            showResult(false, 'Network error. Please try again.');
+            statusEl.textContent = 'Error connecting to server.';
+            statusEl.className = 'text-danger';
+        })
+        .finally(() => {
+            // Resume scanning after cooldown
+            setTimeout(() => {
+                scanCooldown = false;
+                lastScannedValue = '';
+                if (html5QrCode && isScanning) {
+                    html5QrCode.resume();
+                    statusEl.textContent = 'Camera active — point at a QR code.';
+                    statusEl.className = 'text-success fw-semibold';
+                }
+            }, 3000);
+        });
+    }
+
+    function onScanError(err) {
+        // html5-qrcode fires errors continuously when no QR is in frame — ignore quietly
+    }
+
+    function startScanner() {
+        if (html5QrCode === null) {
+            html5QrCode = new Html5Qrcode("qr-reader");
+        }
+
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+
+        html5QrCode.start(
+            { facingMode: "environment" },  // rear camera
+            config,
+            onScanSuccess,
+            onScanError
+        ).then(() => {
+            isScanning = true;
+            startBtn.classList.add('d-none');
+            stopBtn.classList.remove('d-none');
+            readerDiv.style.display = 'block';
+            statusEl.textContent = 'Camera active — point at a QR code.';
+            statusEl.className = 'text-success fw-semibold';
+        }).catch(err => {
+            showResult(false, 'Camera access denied or unavailable. ' +
+                'Please ensure you are on HTTPS and have granted camera permission. ' +
+                'You can still use the manual input below.');
+            statusEl.textContent = 'Camera failed to start. Use manual input.';
+            statusEl.className = 'text-danger';
+            console.error('Camera error:', err);
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrCode && isScanning) {
+            html5QrCode.stop().then(() => {
+                isScanning = false;
+                startBtn.classList.remove('d-none');
+                stopBtn.classList.add('d-none');
+                readerDiv.style.display = 'none';
+                statusEl.textContent = 'Camera stopped.';
+                statusEl.className = 'text-muted';
+            }).catch(err => console.error('Stop error:', err));
+        }
+    }
+</script>
 {% endblock %}

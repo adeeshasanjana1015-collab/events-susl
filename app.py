@@ -874,6 +874,25 @@ def scan_attendance():
             cur.execute("SELECT * FROM registrations WHERE qr_code=%s", (qr_value,))
             reg = cur.fetchone()
 
+        # Try parsing EVENT-event_id-email-timestamp (camera scan)
+        if not reg and qr_value.startswith('EVENT-'):
+            parts = qr_value.split('-', 2)
+            if len(parts) >= 3:
+                try:
+                    event_id = int(parts[1])
+                except ValueError:
+                    event_id = None
+                if event_id:
+                    rest = parts[2]
+                    if len(rest) > 15 and rest[-15] == '-':
+                        email = rest[:-15]
+                        cur.execute("""
+                            SELECT * FROM registrations
+                            WHERE email=%s AND event_id=%s AND status='Active'
+                            ORDER BY id DESC LIMIT 1
+                        """, (email, event_id))
+                        reg = cur.fetchone()
+
         if not reg:
             flash('Invalid QR code. Registration not found.', 'danger')
             cur.close()
@@ -1174,6 +1193,88 @@ def admin_delete_media(media_id):
     cur.close()
     flash('Media deleted.', 'info')
     return redirect(url_for('admin_media'))
+
+
+# ==================== API SCAN (JSON — for camera scanner) ====================
+
+@app.route('/admin/api/scan', methods=['POST'])
+@login_required
+def api_scan():
+    from flask import jsonify
+    data = request.get_json()
+    qr_value = data.get('qr_value', '').strip()
+    if not qr_value:
+        return jsonify({'success': False, 'message': 'No QR code provided.'}), 400
+
+    cur = get_db().cursor()
+    reg = None
+
+    # 1. Try by registration ID (digits only)
+    if qr_value.isdigit():
+        cur.execute("SELECT * FROM registrations WHERE id=%s", (qr_value,))
+        reg = cur.fetchone()
+
+    # 2. Try by qr_code filename
+    if not reg:
+        cur.execute("SELECT * FROM registrations WHERE qr_code=%s", (qr_value,))
+        reg = cur.fetchone()
+
+    # 3. Try parsing EVENT-event_id-email-timestamp (camera scan)
+    if not reg and qr_value.startswith('EVENT-'):
+        parts = qr_value.split('-', 2)  # ['EVENT', 'event_id', 'email@...-YYYYMMDDHHMMSS']
+        if len(parts) >= 3:
+            try:
+                event_id = int(parts[1])
+            except ValueError:
+                event_id = None
+            if event_id:
+                rest = parts[2]
+                # Timestamp is the last 14 chars (YYYYMMDDHHMMSS)
+                if len(rest) > 15 and rest[-15] == '-':
+                    email = rest[:-15]
+                    cur.execute("""
+                        SELECT * FROM registrations
+                        WHERE email=%s AND event_id=%s AND status='Active'
+                        ORDER BY id DESC LIMIT 1
+                    """, (email, event_id))
+                    reg = cur.fetchone()
+
+    if not reg:
+        cur.close()
+        return jsonify({'success': False, 'message': 'Invalid QR code. Registration not found.'}), 404
+
+    if reg['status'] != 'Active':
+        cur.close()
+        return jsonify({'success': False, 'message': 'This registration is not active (cancelled/removed).'}), 400
+
+    if reg['attendance_status'] == 1:
+        cur.execute("SELECT title FROM events WHERE id=%s", (reg['event_id'],))
+        event_title = cur.fetchone()['title']
+        cur.close()
+        return jsonify({
+            'success': False,
+            'message': f'{reg["full_name"]} has already been checked in for {event_title}.',
+            'duplicate': True
+        }), 409
+
+    # Mark attendance
+    cur.execute("UPDATE registrations SET attendance_status=1, check_in_time=NOW() WHERE id=%s",
+                (reg['id'],))
+    cur.execute("INSERT INTO attendance (registration_id, event_id) VALUES (%s, %s)",
+                (reg['id'], reg['event_id']))
+    get_db().commit()
+
+    cur.execute("SELECT title FROM events WHERE id=%s", (reg['event_id'],))
+    event_title = cur.fetchone()['title']
+    cur.close()
+
+    return jsonify({
+        'success': True,
+        'message': 'Check-in successful!',
+        'registration_number': reg['registration_number'],
+        'name': reg['full_name'],
+        'event': event_title
+    })
 
 
 # ==================== STATIC FILES ====================

@@ -1,0 +1,115 @@
+{% extends "admin_base.html" %}
+{% block title %}Media — Admin{% endblock %}
+{% block content %}
+<div class="p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold mb-0"><i class="bi bi-camera me-2"></i>Event Media</h3>
+        <span class="badge bg-primary fs-6">{{ media|length }} item{% if media|length != 1 %}s{% endif %}</span>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="chart-card mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-cloud-upload me-2"></i>Upload Media</h6>
+        <form method="POST" action="{{ url_for('admin_media_upload') }}" enctype="multipart/form-data">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="filter-label">Event</label>
+                    <select name="event_id" class="form-select form-select-sm" required>
+                        <option value="">Select Event...</option>
+                        {% for e in events %}
+                        <option value="{{ e.id }}">{{ e.title[:40] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="filter-label">Type</label>
+                    <select name="media_type" class="form-select form-select-sm" id="mediaTypeSelect"
+                            onchange="document.getElementById('fileUpload').classList.toggle('d-none', this.value==='video');
+                                     document.getElementById('videoUrlGroup').classList.toggle('d-none', this.value!=='video');">
+                        <option value="photo">Photo</option>
+                        <option value="video">Video</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="fileUpload">
+                    <label class="filter-label">File</label>
+                    <input type="file" name="media_file" class="form-control form-control-sm" accept="image/*,video/mp4">
+                </div>
+                <div class="col-md-3 d-none" id="videoUrlGroup">
+                    <label class="filter-label">Video URL (YouTube embed)</label>
+                    <input type="text" name="video_url" class="form-control form-control-sm"
+                           placeholder="https://www.youtube.com/embed/...">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label">Caption (optional)</label>
+                    <input type="text" name="caption" class="form-control form-control-sm" placeholder="Photo caption...">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-upload"></i></button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Filter -->
+    <div class="filter-bar mb-4">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Events</option>
+                    {% for e in events %}
+                    <option value="{{ e.id }}" {% if event_filter==e.id|string %}selected{% endif %}>{{ e.title[:40] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if event_filter %}
+            <div class="col-md-3">
+                <a href="{{ url_for('admin_media') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Clear</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if media %}
+    <div class="row g-3">
+        {% for m in media %}
+        <div class="col-md-3 col-6">
+            <div class="gallery-admin-card">
+                {% if m.media_type == 'video' %}
+                    {% if m.filename %}
+                    <video src="{{ url_for('static', filename='uploads/media/' + m.filename) }}"
+                           controls class="w-100 rounded-3" style="height:160px; object-fit:cover;"></video>
+                    {% elif m.url %}
+                    <div class="ratio ratio-16x9 rounded-3 overflow-hidden">
+                        <iframe src="{{ m.url }}" allowfullscreen></iframe>
+                    </div>
+                    {% endif %}
+                    <span class="badge bg-primary position-absolute top-0 start-0 m-2"><i class="bi bi-play-fill"></i></span>
+                {% else %}
+                <img src="{{ url_for('static', filename='uploads/media/' + (m.filename or '')) }}"
+                     alt="{{ m.caption or 'Photo' }}" class="w-100 rounded-3"
+                     style="height:160px; object-fit:cover;">
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                    <div>
+                        <small class="d-block fw-semibold">{{ m.event_title }}</small>
+                        {% if m.caption %}<small class="text-muted">{{ m.caption }}</small>{% endif %}
+                    </div>
+                    <a href="{{ url_for('admin_delete_media', media_id=m.id) }}"
+                       class="btn btn-sm btn-outline-danger"
+                       onclick="return confirm('Delete this media?')">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-camera display-3 d-block mb-3"></i>
+        <h5>No media uploaded yet.</h5>
+        <p>Upload photos and videos for past events.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

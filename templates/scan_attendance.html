@@ -1,0 +1,22 @@
+{% extends "admin_base.html" %}
+{% block title %}Scan QR Attendance — Admin{% endblock %}
+{% block content %}
+<div class="p-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-5">
+            <div class="form-card p-4 text-center">
+                <div class="mb-3"><i class="bi bi-qr-code-scan display-3 text-primary"></i></div>
+                <h4 class="fw-bold">Scan Attendance</h4>
+                <p class="text-muted small">Enter the QR code or registration ID to check in a participant.</p>
+                <form method="POST">
+                    <div class="mb-3">
+                        <input type="text" name="qr_value" class="form-control form-control-lg text-center"
+                               placeholder="QR Code or Registration ID" required autofocus>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-check-lg me-1"></i>Mark Attendance</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

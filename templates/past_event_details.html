@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} — Past Event{% endblock %}
+{% block content %}
+<section class="py-5">
+    <div class="container">
+
+        <!-- Event Header -->
+        <div class="mb-4">
+            <a href="{{ url_for('past_events') }}" class="text-decoration-none small text-muted">
+                <i class="bi bi-arrow-left me-1"></i>Back to Past Events
+            </a>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-lg-8">
+                <img src="{{ url_for('static', filename='images/events/' + (event.image or 'default_event.jpg')) }}"
+                     alt="{{ event.title }}" class="rounded-4 w-100" style="max-height:400px; object-fit:cover;">
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card h-100">
+                    <span class="badge badge-category mb-2">{{ event.category_name or 'General' }}</span>
+                    <h3 class="fw-bold mb-3">{{ event.title }}</h3>
+                    <div class="text-muted small mb-3">
+                        <div><i class="bi bi-calendar me-2"></i>{{ event.event_date }}</div>
+                        <div><i class="bi bi-clock me-2"></i>{{ event.event_time }}</div>
+                        <div><i class="bi bi-geo-alt me-2"></i>{{ event.venue_name or 'TBA' }}</div>
+                    </div>
+                    <hr>
+                    <div class="row g-2 text-center mb-3">
+                        <div class="col-6">
+                            <h4 class="fw-bold text-primary mb-0">{{ event.booked_count or 0 }}</h4>
+                            <small class="text-muted">Registered</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="fw-bold text-success mb-0">{{ event.attended_count or 0 }}</h4>
+                            <small class="text-muted">Attended</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small">{{ event.description or '' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Analytics -->
+        <div class="row g-4 mb-5">
+            <div class="col-lg-4">
+                <div class="chart-card text-center p-4">
+                    <h1 class="display-3 fw-bold text-warning mb-0">
+                        {{ fb_stats.avg_rating or '—' }}
+                    </h1>
+                    <div class="mb-2">
+                        {% for i in range(5) %}
+                        <i class="bi bi-star-fill {{ 'text-warning' if fb_stats.avg_rating and i < fb_stats.avg_rating|int else 'text-muted opacity-25' }} fs-5"></i>
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted">{{ fb_stats.cnt or 0 }} review{% if fb_stats.cnt != 1 %}s{% endif %}</small>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <h6 class="fw-bold mb-3">Rating Distribution</h6>
+                    {% for star in [5,4,3,2,1] %}
+                    <div class="d-flex align-items-center mb-2">
+                        <small class="me-2" style="width:20px;">{{ star }}</small>
+                        <i class="bi bi-star-fill text-warning me-2 small"></i>
+                        <div class="progress flex-grow-1" style="height:18px;">
+                            <div class="progress-bar bg-warning fw-bold small"
+                                 style="width: {{ (dist[star] / total_fb * 100)|round|int if total_fb > 0 else 0 }}%;">
+                                {{ dist[star] }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if total_fb == 0 %}
+                    <p class="text-muted small text-center py-3">No feedback yet. Be the first to review!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Media Gallery -->
+        {% if media %}
+        <h4 class="fw-bold mb-3"><i class="bi bi-camera me-2"></i>Event Gallery</h4>
+        <div class="row g-3 mb-5">
+            {% for m in media %}
+            <div class="col-md-4 col-lg-3">
+                <div class="gallery-item">
+                    {% if m.media_type == 'video' %}
+                        {% if m.filename %}
+                        <video src="{{ url_for('static', filename='uploads/media/' + m.filename) }}"
+                               controls class="w-100 rounded-3" style="height:200px; object-fit:cover;"></video>
+                        {% elif m.url %}
+                        <div class="ratio ratio-16x9 rounded-3 overflow-hidden">
+                            <iframe src="{{ m.url }}" allowfullscreen></iframe>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                    <img src="{{ url_for('static', filename='uploads/media/' + (m.filename or '')) }}"
+                         alt="{{ m.caption or 'Event photo' }}" class="w-100 rounded-3"
+                         style="height:200px; object-fit:cover; cursor:pointer;"
+                         onclick="this.requestFullscreen?.()">
+                    {% endif %}
+                    {% if m.caption %}
+                    <small class="text-muted d-block mt-1 text-center">{{ m.caption }}</small>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Feedback Comments -->
+        <h4 class="fw-bold mb-3"><i class="bi bi-chat-quote me-2"></i>Feedback</h4>
+
+        {% if feedbacks %}
+        <div class="row g-4 mb-5">
+            {% for fb in feedbacks %}
+            <div class="col-md-6">
+                <div class="feedback-card-detailed">
+                    <div class="feedback-stars mb-2">
+                        {% for i in range(5) %}
+                        <i class="bi bi-star-fill {{ 'text-warning' if i < fb.rating else 'text-muted opacity-25' }}"></i>
+                        {% endfor %}
+                    </div>
+                    <p class="feedback-comment mb-3">"{{ fb.comment or '(No comment)' }}"</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong class="small">{{ fb.full_name or 'Anonymous' }}</strong>
+                        <small class="text-muted">{{ fb.submitted_at.strftime('%b %d, %Y') if fb.submitted_at else '' }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-chat-square-text display-4 d-block mb-2"></i>
+            <p>No feedback yet for this event. Be the first to share your experience!</p>
+        </div>
+        {% endif %}
+
+        <!-- Feedback Form -->
+        <div class="chart-card p-4">
+            <h5 class="fw-bold mb-3">Share Your Feedback</h5>
+            <form method="POST" action="{{ url_for('submit_feedback') }}">
+                <input type="hidden" name="event_id" value="{{ event.id }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Registration Code (optional)</label>
+                        <input type="text" name="registration_code" class="form-control"
+                               placeholder="Your QR code or registration ID">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Rating *</label>
+                        <div class="d-flex gap-1 mt-1">
+                            {% for i in [5,4,3,2,1] %}
+                            <input type="radio" class="btn-check" name="rating" value="{{ i }}" id="star{{ i }}"
+                                   {% if i == 5 %}required{% endif %}>
+                            <label class="btn btn-outline-warning btn-sm" for="star{{ i }}">
+                                {{ i }} <i class="bi bi-star-fill"></i>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Your Comment</label>
+                        <textarea name="comment" class="form-control" rows="3"
+                                  placeholder="Share your experience..."></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i>Submit Feedback
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

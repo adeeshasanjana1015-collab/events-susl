@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+env/
+.env
+
+# Static / uploads (keep git repo small)
+static/qrcodes/*
+!static/qrcodes/.gitkeep
+static/uploads/media/*
+!static/uploads/media/.gitkeep
+static/images/hero/*
+!static/images/hero/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flask
+instance/
+
+# temp
+*.log

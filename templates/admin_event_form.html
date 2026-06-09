@@ -1,0 +1,82 @@
+{% extends "admin_base.html" %}
+{% block title %}{% if event %}Edit{% else %}Add{% endif %} Event — Admin{% endblock %}
+{% block content %}
+<div class="p-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <h3 class="fw-bold mb-4">{% if event %}<i class="bi bi-pencil me-2"></i>Edit{% else %}<i class="bi bi-plus-circle me-2"></i>Add New{% endif %} Event</h3>
+            <form method="POST" enctype="multipart/form-data" class="form-card p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Event Title <span class="text-danger">*</span></label>
+                    <input type="text" name="title" class="form-control" value="{{ event.title if event else '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Description</label>
+                    <textarea name="description" class="form-control" rows="4">{{ event.description if event else '' }}</textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold small">Category</label>
+                        <select name="category_id" class="form-select">{% for c in categories %}<option value="{{ c.id }}" {% if event and event.category_id==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold small">Venue</label>
+                        <select name="venue_id" class="form-select">{% for v in venues %}<option value="{{ v.id }}" {% if event and event.venue_id==v.id %}selected{% endif %}>{{ v.name }}</option>{% endfor %}</select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold small">Date <span class="text-danger">*</span></label>
+                        <input type="date" name="event_date" class="form-control" value="{{ event.event_date if event else '' }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold small">Time <span class="text-danger">*</span></label>
+                        <input type="time" name="event_time" class="form-control" value="{{ event.event_time if event else '' }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold small">Capacity / Seats</label>
+                        <input type="number" name="capacity" class="form-control" value="{{ event.capacity if event else 100 }}" min="1">
+                    </div>
+                </div>
+
+                <!-- Registration Controls -->
+                <div class="border rounded-3 p-3 mb-3 bg-light">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-sliders me-1"></i>Registration Settings</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="registration_open" id="regOpen"
+                                       {% if event is none or event.registration_open == 1 %}checked{% endif %}>
+                                <label class="form-check-label small fw-semibold" for="regOpen">Registration Open</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label small fw-semibold">Closing Date</label>
+                            <input type="date" name="registration_close_date" class="form-control form-control-sm"
+                                   value="{{ event.registration_close_date if event and event.registration_close_date else '' }}">
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label small fw-semibold">Closing Time</label>
+                            <input type="time" name="registration_close_time" class="form-control form-control-sm"
+                                   value="{{ event.registration_close_time if event and event.registration_close_time else '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold small">Event Image</label>
+                    {% if event and event.image and event.image != 'default_event.jpg' %}
+                    <div class="mb-2"><img src="{{ url_for('static', filename='images/events/' + event.image) }}" alt="Current" class="rounded-3" style="max-height:150px; object-fit:cover; border:2px solid #e5e7eb;"></div>
+                    {% endif %}
+                    <input type="file" name="event_image" class="form-control" accept=".jpg,.jpeg,.png,.webp">
+                    <div class="form-text">Allowed: JPG, PNG, WEBP. {% if event %}Leave empty to keep current image.{% endif %}</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">{% if event %}Update Event{% else %}Create Event{% endif %}</button>
+                    <a href="{{ url_for('admin_events') }}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

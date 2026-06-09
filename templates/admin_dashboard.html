@@ -1,0 +1,58 @@
+{% extends "admin_base.html" %}
+{% block title %}Dashboard — Admin{% endblock %}
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Admin Dashboard</h3>
+            <p class="text-muted small mb-0">Welcome back, {{ session.admin_name }}!</p>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4 col-6"><div class="stat-card bg-navy shadow-sm"><h3>{{ total_events }}</h3><small>Total Events</small></div></div>
+        <div class="col-xl-2 col-md-4 col-6"><div class="stat-card bg-green shadow-sm"><h3>{{ total_regs }}</h3><small>Registrations</small></div></div>
+        <div class="col-xl-2 col-md-4 col-6"><div class="stat-card bg-blue shadow-sm"><h3>{{ total_attendance }}</h3><small>Checked In</small></div></div>
+        <div class="col-xl-2 col-md-4 col-6"><div class="stat-card bg-amber shadow-sm"><h3>{{ available }}</h3><small>Available Seats</small></div></div>
+        <div class="col-xl-2 col-md-4 col-6"><div class="stat-card bg-red shadow-sm"><h3>{{ full_events }}</h3><small>Full Events</small></div></div>
+        <div class="col-xl-2 col-md-4 col-6"><div class="stat-card bg-navy shadow-sm"><h5 class="mb-0">{{ most_registered.title[:16] if most_registered else 'N/A' }}</h5><small>Top Event</small></div></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-2 mb-4">
+        <div class="col-auto"><a href="{{ url_for('admin_event_add') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add New Event</a></div>
+        <div class="col-auto"><a href="{{ url_for('admin_events') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-calendar-event me-1"></i>Manage Events</a></div>
+        <div class="col-auto"><a href="{{ url_for('admin_registrations') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-list-check me-1"></i>View Registrations</a></div>
+        <div class="col-auto"><a href="{{ url_for('admin_attendance') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard-check me-1"></i>Attendance Records</a></div>
+        <div class="col-auto"><a href="{{ url_for('scan_attendance') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-qr-code-scan me-1"></i>Scan QR</a></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6"><div class="chart-card"><h5 class="fw-bold mb-3">Registrations by Event</h5><canvas id="regsChart" height="220"></canvas></div></div>
+        <div class="col-lg-6"><div class="chart-card"><h5 class="fw-bold mb-3">Events by Category</h5><canvas id="catChart" height="220"></canvas></div></div>
+        <div class="col-lg-8"><div class="chart-card"><h5 class="fw-bold mb-3">Attendance Overview</h5><canvas id="attChart" height="220"></canvas></div></div>
+        <div class="col-lg-4"><div class="chart-card"><h5 class="fw-bold mb-3">Recent Registrations</h5>
+            <div class="table-responsive" style="max-height:270px;">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Name</th><th>Event</th></tr></thead>
+                    <tbody>
+                    {% for r in recent_regs %}
+                    <tr><td class="small fw-semibold">{{ r.full_name }}</td><td><span class="badge badge-category small">{{ r.event_title }}</span></td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('regsChart'),{type:'bar',data:{labels:[{% for d in regs_by_event %}'{{ d.title[:15] }}',{% endfor %}],datasets:[{label:'Registrations',data:[{% for d in regs_by_event %}{{ d.cnt }},{% endfor %}],backgroundColor:'#1A56DB',borderRadius:6}]},options:{plugins:{legend:{display:false}}}});
+new Chart(document.getElementById('catChart'),{type:'doughnut',data:{labels:[{% for d in events_by_cat %}'{{ d.name }}',{% endfor %}],datasets:[{data:[{% for d in events_by_cat %}{{ d.cnt }},{% endfor %}],backgroundColor:['#1A56DB','#057A55','#F59E0B','#E02424','#7C3AED','#EC4899','#06B6D4']}]}});
+new Chart(document.getElementById('attChart'),{type:'bar',data:{labels:[{% for d in attendance_data %}'{{ d.title[:15] }}',{% endfor %}],datasets:[{label:'Registered',data:[{% for d in attendance_data %}{{ d.total_reg }},{% endfor %}],backgroundColor:'#1A56DB',borderRadius:6},{label:'Attended',data:[{% for d in attendance_data %}{{ d.attended }},{% endfor %}],backgroundColor:'#057A55',borderRadius:6}]}});
+</script>
+{% endblock %}

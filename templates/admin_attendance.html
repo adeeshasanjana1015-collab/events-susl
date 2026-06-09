@@ -1,0 +1,30 @@
+{% extends "admin_base.html" %}
+{% block title %}Attendance Records — Admin{% endblock %}
+{% block content %}
+<div class="p-4">
+    <h3 class="fw-bold mb-4"><i class="bi bi-clipboard-check me-2"></i>Attendance Records</h3>
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead><tr><th>#</th><th>Event</th><th>Seat</th><th>Name</th><th>Email</th><th>QR Code</th><th>Check-in Time</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr>
+                        <td>{{ r.id }}</td>
+                        <td><span class="badge badge-category">{{ r.event_title }}</span></td>
+                        <td><span class="badge bg-dark">{{ r.registration_number }}</span></td>
+                        <td class="fw-semibold">{{ r.full_name }}</td>
+                        <td>{{ r.email }}</td>
+                        <td><code class="small">{{ r.qr_code }}</code></td>
+                        <td>{{ r.check_in_time.strftime('%Y-%m-%d %H:%M') if r.check_in_time else '-' }}</td>
+                        <td><span class="badge badge-available">Checked In</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No attendance records yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

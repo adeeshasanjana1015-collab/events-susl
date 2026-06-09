@@ -1,0 +1,36 @@
+{% extends "admin_base.html" %}
+{% block title %}Manage Events — Admin{% endblock %}
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2"></i>Manage Events</h3>
+        <a href="{{ url_for('admin_event_add') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Event</a>
+    </div>
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr><th>ID</th><th>Title</th><th>Category</th><th>Venue</th><th>Date</th><th>Booked / Capacity</th><th>Status</th><th class="text-end">Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for e in events %}
+                    <tr>
+                        <td>{{ e.id }}</td>
+                        <td class="fw-semibold">{{ e.title }}</td>
+                        <td><span class="badge badge-category">{{ e.category_name or '-' }}</span></td>
+                        <td class="small">{{ e.venue_name or '-' }}</td>
+                        <td>{{ e.event_date }} {{ e.event_time }}</td>
+                        <td>{{ e.booked_count }} / {{ e.capacity }}</td>
+                        <td><span class="badge {% if e.status=='Full' %}badge-full{% else %}badge-available{% endif %}">{{ e.status }}</span></td>
+                        <td class="text-end">
+                            <a href="{{ url_for('admin_event_edit', event_id=e.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{{ url_for('admin_event_delete', event_id=e.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete {{ e.title }}?')">Del</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

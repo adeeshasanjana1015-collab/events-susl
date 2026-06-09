@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Register — {{ event.title }}{% endblock %}
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center g-4">
+            <div class="col-lg-5">
+                <div class="form-card p-4">
+                    <h4 class="fw-bold mb-1">Register for Event</h4>
+                    <p class="text-muted small mb-3">Fill in your details to secure your spot.</p>
+
+                    {% if not event.registration_open %}
+                    <div class="alert alert-warning"><i class="bi bi-lock me-1"></i>Registration is not open yet.</div>
+                    {% elif event.registration_close_date and event.registration_close_time %}
+                    <p class="small text-muted"><i class="bi bi-hourglass-split me-1"></i>Registration closes: {{ event.registration_close_date }} at {{ event.registration_close_time }}</p>
+                    {% endif %}
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="full_name" class="form-control" placeholder="Your full name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Email <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Phone Number <span class="text-danger">*</span></label>
+                            <input type="text" name="phone" class="form-control" placeholder="07X XXX XXXX" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Student ID <span class="text-danger">*</span></label>
+                            <input type="text" name="student_id" class="form-control" placeholder="SUSL/20XX/XXX" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Department <span class="text-danger">*</span></label>
+                            <input type="text" name="department" class="form-control" placeholder="e.g., Data Science" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-send me-1"></i>Submit Registration</button>
+                    </form>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="form-card p-4">
+                    <h5 class="fw-bold">{{ event.title }}</h5>
+                    <hr>
+                    <div class="small text-muted">
+                        <div class="mb-2"><i class="bi bi-tag me-1"></i><strong>{{ event.category_name or 'General' }}</strong></div>
+                        <div class="mb-2"><i class="bi bi-calendar me-1"></i>{{ event.event_date }}</div>
+                        <div class="mb-2"><i class="bi bi-clock me-1"></i>{{ event.event_time }}</div>
+                        <div><i class="bi bi-people me-1"></i>Capacity: {{ event.capacity }}</div>
+                    </div>
+                    <div class="alert alert-info mt-3 mb-0 small">
+                        <i class="bi bi-info-circle me-1"></i>You'll receive a seat number and QR code after registration.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

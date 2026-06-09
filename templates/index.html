@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Events.SUSL — Home{% endblock %}
+{% block content %}
+
+<!-- Hero Slideshow -->
+<section class="hero-section text-white position-relative overflow-hidden">
+    <!-- Slides -->
+    <div class="hero-slideshow">
+        <div class="hero-slide active" style="background-image: url('{{ url_for('static', filename='images/hero/hero-1.jpg') }}');"></div>
+        <div class="hero-slide" style="background-image: url('{{ url_for('static', filename='images/hero/hero-2.jpg') }}');"></div>
+        <div class="hero-slide" style="background-image: url('{{ url_for('static', filename='images/hero/hero-3.jpg') }}');"></div>
+        <div class="hero-slide" style="background-image: url('{{ url_for('static', filename='images/hero/hero-4.jpg') }}');"></div>
+    </div>
+    <!-- Dark overlay -->
+    <div class="hero-overlay"></div>
+    <!-- Content -->
+    <div class="hero-content">
+        <div class="container py-5">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h1 class="display-4 fw-bold mb-3">Events.SUSL</h1>
+                    <p class="lead mb-2">QR-Based University Event Registration & Attendance Management System</p>
+                    <p class="mb-4" style="opacity:0.8; max-width:500px;">Discover, register, and attend university events seamlessly. Get your unique QR code and check in instantly at the venue.</p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('events') }}" class="btn btn-light"><i class="bi bi-calendar-check me-1"></i> View Events</a>
+                        <a href="{{ url_for('events') }}" class="btn btn-outline-light"><i class="bi bi-pencil-square me-1"></i> Register</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Dot indicators -->
+    <div class="hero-dots">
+        <span class="hero-dot active" data-slide="0"></span>
+        <span class="hero-dot" data-slide="1"></span>
+        <span class="hero-dot" data-slide="2"></span>
+        <span class="hero-dot" data-slide="3"></span>
+    </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="stats-bar">
+    <div class="container">
+        <div class="row g-0">
+            <div class="col-6 col-md-3 stats-item border-end"><h3>{{ total_events }}</h3><small>Total Events</small></div>
+            <div class="col-6 col-md-3 stats-item border-end"><h3>{{ total_capacity }}</h3><small>Total Capacity</small></div>
+            <div class="col-6 col-md-3 stats-item border-end"><h3>{{ total_regs }}</h3><small>Registrations</small></div>
+            <div class="col-6 col-md-3 stats-item"><h3>{{ total_attendance }}</h3><small>Attended</small></div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Events -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="section-title">Featured Events</h2>
+            <p class="section-subtitle mx-auto">Upcoming events at Sabaragamuwa University</p>
+        </div>
+        <div class="row g-4">
+            {% for event in featured_events %}
+            <div class="col-md-4">
+                <a href="{{ url_for('event_details', event_id=event.id) }}" class="text-decoration-none">
+                    <div class="featured-card">
+                        <img src="{{ url_for('static', filename='images/events/' + (event.image or 'default_event.jpg')) }}"
+                             alt="{{ event.title }}">
+                        <div class="featured-overlay">
+                            <span class="badge badge-category mb-2">{{ event.category_name or 'General' }}</span>
+                            <h5 class="mb-0">{{ event.title }}</h5>
+                            <small><i class="bi bi-calendar me-1"></i>{{ event.event_date }}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+            {% if not featured_events %}
+            <div class="col-12 text-center text-muted py-5">
+                <i class="bi bi-calendar-x display-4 d-block mb-3"></i>
+                <p>No upcoming events at the moment. Check back soon!</p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('events') }}" class="btn btn-outline-primary">View All Events <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle mx-auto">Four simple steps to attend your event</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="step-card">
+                    <div class="step-icon"><i class="bi bi-search"></i></div>
+                    <h5>Browse Events</h5>
+                    <p class="small text-muted mb-0">Discover upcoming events across all faculties and departments.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="step-card">
+                    <div class="step-icon"><i class="bi bi-pencil-square"></i></div>
+                    <h5>Register Online</h5>
+                    <p class="small text-muted mb-0">Fill in a quick form and secure your spot in seconds.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="step-card">
+                    <div class="step-icon"><i class="bi bi-qr-code"></i></div>
+                    <h5>Get QR Code</h5>
+                    <p class="small text-muted mb-0">Receive your unique QR code — your digital entry pass.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="step-card">
+                    <div class="step-icon"><i class="bi bi-check-circle"></i></div>
+                    <h5>Scan & Attend</h5>
+                    <p class="small text-muted mb-0">Show your QR at the entrance for instant check-in.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About -->
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <img src="{{ url_for('static', filename='images/campus-students.jpg') }}" alt="Campus"
+                     class="rounded-4 shadow w-100" style="max-height:350px; object-fit:cover;">
+            </div>
+            <div class="col-lg-6">
+                <h2 class="section-title">About Events.SUSL</h2>
+                <p class="text-muted">Events.SUSL is the official event management platform for Sabaragamuwa University of Sri Lanka, developed by the Department of Data Science, Faculty of Computing.</p>
+                <p class="text-muted">Our QR-based system makes it easy for students to discover events, register online, and check in instantly — eliminating paper tickets and manual attendance tracking.</p>
+                <div class="row g-3 mt-2">
+                    <div class="col-6"><div class="about-card"><i class="bi bi-people-fill d-block mb-2"></i><strong>Student-Friendly</strong><p class="small text-muted mb-0">Simple registration</p></div></div>
+                    <div class="col-6"><div class="about-card"><i class="bi bi-qr-code-scan d-block mb-2"></i><strong>QR Check-in</strong><p class="small text-muted mb-0">Instant attendance</p></div></div>
+                    <div class="col-6"><div class="about-card"><i class="bi bi-graph-up d-block mb-2"></i><strong>Analytics</strong><p class="small text-muted mb-0">Real-time stats</p></div></div>
+                    <div class="col-6"><div class="about-card"><i class="bi bi-shield-check d-block mb-2"></i><strong>Secure</strong><p class="small text-muted mb-0">Admin protected</p></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Past Events -->
+{% if past_count > 0 %}
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="section-title">Past Events</h2>
+            <p class="section-subtitle mx-auto">Relive our previous events and share your experience</p>
+        </div>
+        <div class="text-center">
+            <p class="text-muted mb-3">{{ past_count }} past event{% if past_count != 1 %}s{% endif %} · Photos, videos, and feedback</p>
+            <a href="{{ url_for('past_events') }}" class="btn btn-outline-primary">
+                <i class="bi bi-clock-history me-2"></i>Browse Past Events
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Feedback Section -->
+{% if recent_feedback %}
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="section-title">What Attendees Say</h2>
+            <p class="section-subtitle mx-auto">Real feedback from our event participants</p>
+        </div>
+        <div class="row g-4">
+            {% for fb in recent_feedback %}
+            <div class="col-md-4">
+                <div class="feedback-card">
+                    <div class="feedback-stars mb-2">
+                        {% for i in range(5) %}
+                        <i class="bi bi-star-fill {{ 'text-warning' if i < fb.rating else 'text-muted opacity-25' }}"></i>
+                        {% endfor %}
+                    </div>
+                    <p class="feedback-comment mb-3">"{{ fb.comment or '(No comment)' }}"</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="d-block small">{{ fb.full_name or 'Anonymous' }}</strong>
+                            <small class="text-muted">{{ fb.event_title }}</small>
+                        </div>
+                        <small class="text-muted">{{ fb.submitted_at.strftime('%b %d, %Y') if fb.submitted_at else '' }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var slides = document.querySelectorAll('.hero-slide');
+    var dots = document.querySelectorAll('.hero-dot');
+    var current = 0;
+    var total = slides.length;
+    var interval = 4000;
+    var timer;
+
+    function goTo(idx) {
+        slides[current].classList.remove('active');
+        dots[current].classList.remove('active');
+        current = idx;
+        slides[current].classList.add('active');
+        dots[current].classList.add('active');
+    }
+
+    function next() {
+        goTo((current + 1) % total);
+    }
+
+    timer = setInterval(next, interval);
+
+    dots.forEach(function(dot) {
+        dot.addEventListener('click', function() {
+            clearInterval(timer);
+            goTo(parseInt(this.getAttribute('data-slide')));
+            timer = setInterval(next, interval);
+        });
+    });
+})();
+</script>
+{% endblock %}

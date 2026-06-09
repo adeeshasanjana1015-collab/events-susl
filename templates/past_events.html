@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Past Events — Events.SUSL{% endblock %}
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Past Events</h2>
+            <p class="section-subtitle mx-auto">Browse photos, videos, and feedback from our previous events</p>
+        </div>
+
+        {% if events %}
+        <div class="row g-4">
+            {% for event in events %}
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('past_event_details', event_id=event.id) }}" class="text-decoration-none">
+                    <div class="featured-card">
+                        <img src="{{ url_for('static', filename='images/events/' + (event.image or 'default_event.jpg')) }}"
+                             alt="{{ event.title }}">
+                        <div class="featured-overlay">
+                            <span class="badge badge-category mb-2">{{ event.category_name or 'General' }}</span>
+                            <h5 class="mb-0">{{ event.title }}</h5>
+                            <small><i class="bi bi-calendar me-1"></i>{{ event.event_date }}</small>
+                            {% if event.feedback_count > 0 %}
+                            <div class="mt-1">
+                                <small class="text-warning">
+                                    {% for i in range(event.avg_rating|int) %}★{% endfor %}
+                                    {% if (event.avg_rating % 1) >= 0.5 %}½{% endif %}
+                                    {{ event.avg_rating }}
+                                </small>
+                                <small class="ms-2">({{ event.feedback_count }} review{% if event.feedback_count != 1 %}s{% endif %})</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-clock-history display-3 text-muted d-block mb-3"></i>
+            <h5 class="text-muted">No past events yet.</h5>
+            <p class="text-muted">Check back after events have completed!</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

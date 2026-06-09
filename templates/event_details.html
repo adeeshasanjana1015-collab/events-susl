@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} — Events.SUSL{% endblock %}
+{% block content %}
+<section>
+    <div class="position-relative" style="height:280px; overflow:hidden;">
+        <img src="{{ url_for('static', filename='images/events/' + (event.image or 'default_event.jpg')) }}"
+             class="w-100 h-100" style="object-fit:cover; filter: brightness(0.5);" alt="{{ event.title }}">
+        <div class="position-absolute bottom-0 start-0 w-100 p-4 text-white">
+            <div class="container">
+                <span class="badge badge-category mb-2">{{ event.category_name or 'General' }}</span>
+                <h1 class="fw-bold mb-1">{{ event.title }}</h1>
+                <p class="mb-0 opacity-75"><i class="bi bi-calendar me-1"></i>{{ event.event_date }} &nbsp; <i class="bi bi-clock me-1"></i>{{ event.event_time }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="bg-white rounded-4 shadow-sm p-4">
+                    <h4 class="fw-bold mb-3">About This Event</h4>
+                    <p class="text-muted">{{ event.description }}</p>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="bg-white rounded-4 shadow-sm p-4">
+                    <h5 class="fw-bold mb-3">Event Details</h5>
+                    <div class="text-muted small">
+                        <div class="d-flex justify-content-between py-2 border-bottom"><span><i class="bi bi-geo-alt me-1"></i>Venue</span><strong>{{ event.venue_name or 'TBA' }}</strong></div>
+                        <div class="d-flex justify-content-between py-2 border-bottom"><span><i class="bi bi-people me-1"></i>Capacity</span><strong>{{ event.capacity }}</strong></div>
+                        <div class="d-flex justify-content-between py-2 border-bottom"><span><i class="bi bi-person-check me-1"></i>Registered</span><strong>{{ event.booked_count or 0 }}</strong></div>
+                        {% set avail = event.capacity - (event.booked_count or 0) %}
+                        <div class="d-flex justify-content-between py-2"><span><i class="bi bi-ticket me-1"></i>Available</span><strong class="{% if avail > 0 %}text-success{% else %}text-danger{% endif %}">{{ avail if avail > 0 else 0 }}</strong></div>
+                    </div>
+
+                    {% if not event.registration_open %}
+                    <div class="alert alert-warning mt-3 mb-0 text-center">Registration is not open yet.</div>
+                    {% elif event.status == 'Full' %}
+                    <div class="alert alert-danger mt-3 mb-0 text-center">This event is fully booked.</div>
+                    {% else %}
+                    {% if event.registration_close_date and event.registration_close_time %}
+                    <p class="small text-muted mt-2 mb-0"><i class="bi bi-hourglass-split me-1"></i>Registration closes: {{ event.registration_close_date }} at {{ event.registration_close_time }}</p>
+                    {% endif %}
+                    <a href="{{ url_for('register', event_id=event.id) }}" class="btn btn-primary w-100 mt-2">
+                        <i class="bi bi-pencil-square me-1"></i>Register Now
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

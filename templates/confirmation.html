@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Registration Confirmed — Events.SUSL{% endblock %}
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 text-center">
+                <div class="bg-white rounded-4 shadow-sm p-5">
+                    <div class="mb-3">
+                        <i class="bi bi-check-circle-fill display-1 text-success"></i>
+                    </div>
+                    <h2 class="fw-bold">Registration Confirmed!</h2>
+                    <p class="text-muted">You are registered for <strong>{{ registration.event_title }}</strong>.</p>
+                    <p><span class="badge bg-dark fs-6 px-3 py-2">Seat #{{ registration.registration_number }}</span></p>
+
+                    <hr class="my-4">
+
+                    <div class="text-start bg-light rounded-3 p-3 mb-4">
+                        <div class="row small">
+                            <div class="col-5 text-muted">Seat Number</div><div class="col-7 fw-bold">#{{ registration.registration_number }}</div>
+                            <div class="col-5 text-muted">Name</div><div class="col-7 fw-semibold">{{ registration.full_name }}</div>
+                            <div class="col-5 text-muted">Email</div><div class="col-7 fw-semibold">{{ registration.email }}</div>
+                            <div class="col-5 text-muted">Student ID</div><div class="col-7 fw-semibold">{{ registration.student_id }}</div>
+                            <div class="col-5 text-muted">Event</div><div class="col-7 fw-semibold">{{ registration.event_title }}</div>
+                            <div class="col-5 text-muted">Date</div><div class="col-7 fw-semibold">{{ registration.event_date }} at {{ registration.event_time }}</div>
+                        </div>
+                    </div>
+
+                    {% if registration.qr_code %}
+                    <div class="mb-4">
+                        <h5 class="fw-bold">Your QR Code</h5>
+                        <div class="qr-display my-3">
+                            <img src="{{ url_for('static', filename='qrcodes/' + registration.qr_code) }}" alt="QR Code">
+                        </div>
+                        <p class="small text-muted">Please bring this QR code to the event entrance for attendance scanning.</p>
+                        <a href="{{ url_for('static', filename='qrcodes/' + registration.qr_code) }}"
+                           class="btn btn-outline-primary btn-sm" download>
+                            <i class="bi bi-download me-1"></i>Download QR
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <a href="{{ url_for('events') }}" class="btn btn-primary">Browse More Events</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

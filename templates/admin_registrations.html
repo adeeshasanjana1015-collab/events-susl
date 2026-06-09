@@ -1,0 +1,361 @@
+{% extends "admin_base.html" %}
+{% block title %}Registrations — Admin{% endblock %}
+{% block content %}
+<div class="p-4">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold mb-0"><i class="bi bi-list-check me-2"></i>Registrations</h3>
+        <a href="{{ url_for('admin_registrations_export',
+                search=search, event_id=event_filter, category_id=category_filter,
+                status=status_filter, attendance=attendance_filter) }}"
+           class="btn btn-sm btn-success">
+            <i class="bi bi-download me-1"></i>Export CSV
+        </a>
+    </div>
+
+    <!-- ===== 1. SUMMARY CARDS ===== -->
+    <div class="row g-2 mb-3">
+        <div class="col-xl col-md-4 col-6">
+            <div class="summary-card bg-navy">
+                <div class="summary-icon"><i class="bi bi-people-fill"></i></div>
+                <div><h4>{{ total_all }}</h4><small>Total Registrations</small></div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="summary-card bg-green">
+                <div class="summary-icon"><i class="bi bi-person-check-fill"></i></div>
+                <div><h4>{{ total_active }}</h4><small>Active</small></div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="summary-card bg-red">
+                <div class="summary-icon"><i class="bi bi-person-x-fill"></i></div>
+                <div><h4>{{ total_pending }}</h4><small>Pending / Removed</small></div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="summary-card bg-blue">
+                <div class="summary-icon"><i class="bi bi-clipboard-check-fill"></i></div>
+                <div><h4>{{ total_attended }}</h4><small>Attendance Marked</small></div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="summary-card bg-amber">
+                <div class="summary-icon"><i class="bi bi-pie-chart-fill"></i></div>
+                <div><h4>{{ available }}</h4><small>Available Seats</small></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <!-- ===== 2. CATEGORY-WISE SUMMARY ===== -->
+        <div class="col-lg-7">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="bi bi-tags me-2"></i>Registrations by Category</h6>
+                <div class="row g-2">
+                    {% for cat in cat_summary %}
+                    <div class="col-md-4 col-6">
+                        <div class="cat-badge-card">
+                            <span class="cat-name">{{ cat.name }}</span>
+                            <span class="cat-count">{{ cat.cnt }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if not cat_summary %}
+                    <div class="col-12 text-muted small">No categories yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- ===== 3. CATEGORY CHART (mini) ===== -->
+        <div class="col-lg-5">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-2"><i class="bi bi-bar-chart me-2"></i>Category Distribution</h6>
+                <canvas id="catRegsChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 4. EVENT-WISE SUMMARY (collapsible) ===== -->
+    <div class="chart-card mb-4">
+        <div class="d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#eventSummaryTable" role="button">
+            <h6 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2"></i>Event-wise Registration Summary</h6>
+            <i class="bi bi-chevron-down toggle-icon"></i>
+        </div>
+        <div class="collapse" id="eventSummaryTable">
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr>
+                        <th>Event</th><th>Category</th><th>Capacity</th><th>Active</th><th>Pending</th><th>Available</th><th>Attended</th><th>Status</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for es in event_summary %}
+                    <tr>
+                        <td class="fw-semibold">{{ es.title }}</td>
+                        <td><span class="badge badge-category">{{ es.category_name }}</span></td>
+                        <td>{{ es.capacity }}</td>
+                        <td><span class="badge bg-success">{{ es.active_count }}</span></td>
+                        <td><span class="badge bg-danger">{{ es.pending_count }}</span></td>
+                        <td><span class="badge bg-secondary">{{ es.capacity - es.active_count if (es.capacity - es.active_count) > 0 else 0 }}</span></td>
+                        <td><span class="badge bg-primary">{{ es.attended_count }}</span></td>
+                        <td>
+                            {% if es.event_status == 'Full' %}
+                            <span class="badge bg-danger">Full</span>
+                            {% else %}
+                            <span class="badge bg-success">Open</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not event_summary %}
+                    <tr><td colspan="8" class="text-muted small text-center py-2">No events yet.</td></tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 5. FILTERS ===== -->
+    <div class="filter-bar mb-4">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-2 col-sm-4">
+                <label class="filter-label">Search</label>
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Name / Email / Student ID" value="{{ search or '' }}">
+            </div>
+            <div class="col-md-2 col-sm-4">
+                <label class="filter-label">Event</label>
+                <select name="event_id" class="form-select form-select-sm">
+                    <option value="">All Events</option>
+                    {% for e in events %}
+                    <option value="{{ e.id }}" {% if event_filter==e.id|string %}selected{% endif %}>{{ e.title[:30] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-4">
+                <label class="filter-label">Category</label>
+                <select name="category_id" class="form-select form-select-sm">
+                    <option value="">All Categories</option>
+                    {% for c in categories %}
+                    <option value="{{ c.id }}" {% if category_filter==c.id|string %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-4">
+                <label class="filter-label">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="Active" {% if status_filter=='Active' %}selected{% endif %}>Active</option>
+                    <option value="Pending" {% if status_filter=='Pending' %}selected{% endif %}>Pending</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-4">
+                <label class="filter-label">Attendance</label>
+                <select name="attendance" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="checked_in" {% if attendance_filter=='checked_in' %}selected{% endif %}>Checked In</option>
+                    <option value="not_checked_in" {% if attendance_filter=='not_checked_in' %}selected{% endif %}>Not Checked In</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-4 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-funnel me-1"></i>Filter</button>
+                {% if search or event_filter or category_filter or status_filter or attendance_filter %}
+                <a href="{{ url_for('admin_registrations') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i></a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== 6. PAGINATION CONTROLS (top) ===== -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">{{ total_count }} result{% if total_count != 1 %}s{% endif %}</span>
+            <span class="text-muted small">|</span>
+            <span class="text-muted small">Show</span>
+            <div class="btn-group btn-group-sm">
+                <a href="?{{ request.args|replace_page(1)|replace_per_page(25) }}" class="btn btn-sm {% if per_page==25 %}btn-primary{% else %}btn-outline-secondary{% endif %}">25</a>
+                <a href="?{{ request.args|replace_page(1)|replace_per_page(50) }}" class="btn btn-sm {% if per_page==50 %}btn-primary{% else %}btn-outline-secondary{% endif %}">50</a>
+                <a href="?{{ request.args|replace_page(1)|replace_per_page(100) }}" class="btn btn-sm {% if per_page==100 %}btn-primary{% else %}btn-outline-secondary{% endif %}">100</a>
+            </div>
+            <span class="text-muted small">per page</span>
+        </div>
+
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ request.args|replace_page(page-1) }}" tabindex="-1">Prev</a>
+                </li>
+                {% for p in range(1, total_pages+1) %}
+                    {% if p == 1 or p == total_pages or (p >= page-2 and p <= page+2) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="?{{ request.args|replace_page(p) }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page-3 or p == page+3 %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ request.args|replace_page(page+1) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- ===== 7. ACTIVE REGISTRATIONS TABLE ===== -->
+    <h5 class="fw-bold mb-3">
+        <i class="bi bi-person-check text-success me-2"></i>Active Registrations
+        <span class="badge bg-success ms-1">{{ total_active }}</span>
+    </h5>
+    <div class="table-card mb-4">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead><tr>
+                    <th>No.</th><th>Event</th><th>Category</th><th>Name</th><th>Email</th><th>Phone</th>
+                    <th>Student ID</th><th>Dept</th><th>QR Code</th><th>Status</th>
+                    <th class="text-end">Action</th>
+                </tr></thead>
+                <tbody>
+                    {% for r in active_registrations %}
+                    <tr>
+                        <td><span class="badge bg-dark">{{ r.registration_number }}</span></td>
+                        <td><span class="badge badge-category">{{ r.event_title }}</span></td>
+                        <td><small class="text-muted">{{ r.category_name or '-' }}</small></td>
+                        <td class="fw-semibold">{{ r.full_name }}</td>
+                        <td>{{ r.email }}</td>
+                        <td>{{ r.phone }}</td>
+                        <td>{{ r.student_id }}</td>
+                        <td>{{ r.department }}</td>
+                        <td><code class="small text-muted">{{ r.qr_code or '-' }}</code></td>
+                        <td>
+                            {% if r.attendance_status == 1 %}
+                            <span class="badge bg-success">Checked In</span>
+                            {% else %}
+                            <span class="badge bg-primary">Active</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('admin_cancel_registration', reg_id=r.id) }}"
+                               class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('Move {{ r.full_name }} to Pending list? Their seat will be freed and can be restored later.')">
+                                Remove
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="11" class="text-center text-muted py-4">
+                        {% if status_filter and status_filter != 'Active' %}
+                        Filtered — no Active registrations match.
+                        {% else %}
+                        No active registrations.
+                        {% endif %}
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===== 8. PENDING REGISTRATIONS TABLE ===== -->
+    <h5 class="fw-bold mb-3">
+        <i class="bi bi-person-x text-danger me-2"></i>Pending / Removed
+        <span class="badge bg-danger ms-1">{{ total_pending }}</span>
+    </h5>
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead><tr>
+                    <th>Reg ID</th><th>Event</th><th>Category</th><th>Name</th><th>Email</th><th>Phone</th>
+                    <th>Student ID</th><th>Dept</th><th>QR Code</th><th>Status</th>
+                    <th class="text-end">Action</th>
+                </tr></thead>
+                <tbody>
+                    {% for r in pending_registrations %}
+                    <tr class="table-secondary opacity-75">
+                        <td><code>{{ r.id }}</code></td>
+                        <td><span class="badge badge-category">{{ r.event_title }}</span></td>
+                        <td><small class="text-muted">{{ r.category_name or '-' }}</small></td>
+                        <td class="fw-semibold">{{ r.full_name }}</td>
+                        <td>{{ r.email }}</td>
+                        <td>{{ r.phone }}</td>
+                        <td>{{ r.student_id }}</td>
+                        <td>{{ r.department }}</td>
+                        <td><code class="small text-muted">{{ r.qr_code or '-' }}</code></td>
+                        <td><span class="badge bg-danger">Pending</span></td>
+                        <td class="text-end">
+                            <a href="{{ url_for('admin_restore_registration', reg_id=r.id) }}"
+                               class="btn btn-sm btn-outline-success"
+                               onclick="return confirm('Restore {{ r.full_name }} to active list? They will be placed at the end.')">
+                                Add Back
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="11" class="text-center text-muted py-4">
+                        {% if status_filter and status_filter != 'Pending' %}
+                        Filtered — no Pending registrations match.
+                        {% else %}
+                        No pending registrations.
+                        {% endif %}
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===== 9. BOTTOM PAGINATION ===== -->
+    {% if total_pages > 1 %}
+    <div class="d-flex justify-content-end mt-3">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ request.args|replace_page(page-1) }}">Prev</a>
+                </li>
+                {% for p in range(1, total_pages+1) %}
+                    {% if p == 1 or p == total_pages or (p >= page-2 and p <= page+2) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="?{{ request.args|replace_page(p) }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page-3 or p == page+3 %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ request.args|replace_page(page+1) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+// Category distribution chart
+new Chart(document.getElementById('catRegsChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for cat in cat_summary %}'{{ cat.name }}',{% endfor %}],
+        datasets: [{
+            label: 'Active Registrations',
+            data: [{% for cat in cat_summary %}{{ cat.cnt }},{% endfor %}],
+            backgroundColor: [
+                '#1A56DB','#057A55','#F59E0B','#E02424','#7C3AED',
+                '#EC4899','#06B6D4','#8B5CF6','#10B981','#F97316'
+            ],
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+    }
+});
+</script>
+{% endblock %}

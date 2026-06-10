@@ -96,14 +96,42 @@ def renumber_registrations(event_id):
     get_db().commit()
     cur.close()
 
+def _to_time(value):
+    """Safely convert a MySQL TIME value to datetime.time.
+    Handles datetime.time, datetime.timedelta, str ('18:00:00'), and None."""
+    if value is None:
+        return None
+    if isinstance(value, dt_time):
+        return value
+    if isinstance(value, timedelta):
+        total_seconds = int(value.total_seconds())
+        return dt_time(total_seconds // 3600, (total_seconds % 3600) // 60,
+                       total_seconds % 60)
+    if isinstance(value, str):
+        parts = value.strip().split(':')
+        if len(parts) >= 2:
+            return dt_time(int(parts[0]), int(parts[1]),
+                           int(parts[2]) if len(parts) >= 3 else 0)
+    return None
+
+
 def registration_is_open(event):
-    """Check if registration is open for an event."""
+    """Check if registration is open for an event.
+    Returns (is_open: bool, message: str)."""
     if not event.get('registration_open', 1):
         return False, 'Registration is not open yet.'
-    if event.get('registration_close_date') and event.get('registration_close_time'):
-        close_dt = datetime.combine(event['registration_close_date'], event['registration_close_time'])
+
+    close_date = event.get('registration_close_date')
+    close_time = event.get('registration_close_time')
+
+    if close_date and close_time:
+        close_t = _to_time(close_time)
+        if close_t is None:
+            return False, 'Registration is currently unavailable for this event.'
+        close_dt = datetime.combine(close_date, close_t)
         if datetime.now() > close_dt:
-            return False, 'Registration is closed.'
+            return False, 'Registration is closed for this event.'
+
     return True, ''
 
 ACTIVE_FILTER = "AND status='Active'"
@@ -210,9 +238,11 @@ def _compute_reg_status(event):
     if not event.get('registration_open', 1):
         return 'not_open'
     if event.get('registration_close_date') and event.get('registration_close_time'):
-        close_dt = datetime.combine(event['registration_close_date'], event['registration_close_time'])
-        if datetime.now() > close_dt:
-            return 'closed'
+        close_t = _to_time(event['registration_close_time'])
+        if close_t:
+            close_dt = datetime.combine(event['registration_close_date'], close_t)
+            if datetime.now() > close_dt:
+                return 'closed'
     return 'open'
 
 @app.route('/event/<int:event_id>')
@@ -865,15 +895,9 @@ def _check_attendance_window(event_id, cur):
     if not event:
         return False, 'Event not found.'
 
-    # Safely combine event_date + event_time (event_time may be timedelta, time, or str)
-    ev_time = event['event_time']
-    if isinstance(ev_time, timedelta):
-        total_seconds = int(ev_time.total_seconds())
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        ev_t = dt_time(hours, minutes)
-    else:
-        ev_t = ev_time
+    ev_t = _to_time(event['event_time'])
+    if ev_t is None:
+        return False, 'Event time is invalid.'
 
     event_dt = datetime.combine(event['event_date'], ev_t)
     attendance_open_dt = event_dt - timedelta(hours=3)
